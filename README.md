@@ -1,4 +1,4 @@
-# Cloud Based Application Monitoring Stack 
+# Cloud Based Host/Application Monitoring Stack 
 
 * Comprised of ELK stack that auto discovers new docker containers
 * Filebeat will read all stdout from containers
