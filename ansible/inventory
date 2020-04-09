@@ -1,0 +1,57 @@
+[es-traefik]
+es-traefik_host ansible_host=<ip_addr>
+
+[es-traefik:vars]
+# HOST VARS
+ansible_user=root 
+ansible_password=<ansible_user password>
+ansible_become_user=root
+ansible_become_password=<ansible_become_user password>
+ansible_become_method=sudo
+ansible_python_interpreter=/usr/bin/python3
+ansible_connection=ssh
+
+# ROLE VARS
+
+## install_docker
+DOCKER_PRIVATE_REPO=<True or False>
+DOCKER_REPO=<docker repo address>
+DOCKER_REPO_USER=<docker repo username>
+DOCKER_REPO_PASS=<docker repo password>
+
+## deploy_es_stack
+
+### htaccess generation - kibana + traefik + grafana
+htaccess_user=<htaccess username>
+htaccess_password=<htaccess password>
+
+### install elk
+DEST_DIR=/root
+ES_NODE=elastic
+ES_CLUSTER=es-traefik
+ES_VERSION=7.6.1
+ELASTICSEARCH_HOST=elastic
+ELASTICSEARCH_EXTERNAL=false
+KIBANA_HOST=kibana
+KIBANA_DARK_MODE=true
+APM_HOST=apm
+APM_EXTERNAL=false
+
+### cloudflare + traefik
+TRAEFIK_HOST=traefik
+CF_DOMAIN=<cloudflare domain>
+CF_ACME=true
+CF_API_EMAIL=<cloudflare-email>
+CF_API_KEY=<cloudflare-global-api-key>
+CF_DYNAMIC=dynamic-traefik
+CF_ZONE_ID=<cloudflare-domain-zone-id>
+CF_API_KEY_SCOPED=<cloudflare-scoped-api-key>
+
+### webserver
+APM_SERVER=http://apm-server:8200
+APM_SERVICE=webserver
+WEBSERVER_HOST=web
+
+# grafana
+GRAFANA_HOST=grafana
+GRAFANA_EXTERNAL=true

@@ -1,0 +1,30 @@
+---
+- name: Copy es_traefik Stack
+  copy:
+    src: files/es-traefik
+    dest: "{{DEST_DIR}}"
+
+- name: Install htaccess generation requirements
+  pip:
+    name:
+      - passlib
+
+- name: Make htaccess dir
+  file:
+    path: "{{DEST_DIR}}/es-traefik/htaccess"
+    state: directory
+
+- name: Generate htaccess file for Kibana + Traefik frontends
+  htpasswd:
+    path: "{{DEST_DIR}}/es-traefik/htaccess/.htpasswd"
+    name: "{{htaccess_user}}"
+    password: "{{htaccess_password}}"
+
+- name: Start es_traefik Stack
+  docker_compose:
+    project_src: "{{DEST_DIR}}/es-traefik"
+    build: yes
+  register: output
+
+#- debug:
+#    var: output

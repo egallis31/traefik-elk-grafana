@@ -1,0 +1,34 @@
+# config file version
+apiVersion: 1
+
+datasources:
+    - name: filebeat
+      type: elasticsearch
+      access: proxy
+      database: "filebeat-*"
+      url: http://${ES_NODE}:9200
+      jsonData:
+        timeField: "@timestamp"
+        esVersion: 70
+        logMessageField: message
+        logLevelField: fields.level
+    - name: metricbeat
+      type: elasticsearch
+      access: proxy
+      database: "metricbeat-*"
+      url: http://${ES_NODE}:9200
+      jsonData:
+        timeField: "@timestamp"
+        esVersion: 70
+        logMessageField: message
+        logLevelField: fields.level
+    - name: apm
+      type: elasticsearch
+      access: proxy
+      database: "apm-*"
+      url: http://${ES_NODE}:9200
+      jsonData:
+        timeField: "@timestamp"
+        esVersion: 70
+        logMessageField: message
+        logLevelField: fields.level

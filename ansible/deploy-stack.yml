@@ -1,0 +1,31 @@
+- hosts: es-traefik
+  become: true
+  roles: 
+    - apt_upgrade_all
+    - install_docker
+    - deploy_es_stack
+  environment:
+    ELASTICSEARCH_HOST: "{{ELASTICSEARCH_HOST}}"
+    ELASTICSEARCH_EXTERNAL: "{{ELASTICSEARCH_EXTERNAL}}"
+    ES_NODE: "{{ES_NODE}}"
+    ES_CLUSTER: "{{ES_CLUSTER}}"
+    ES_VERSION: "{{ES_VERSION}}"
+    KIBANA_HOST: "{{KIBANA_HOST}}"
+    KIBANA_DARK_MODE: "{{KIBANA_DARK_MODE}}"
+    APM_HOST: "{{APM_HOST}}"
+    APM_EXTERNAL: "{{APM_EXTERNAL}}"
+    CF_DOMAIN: "{{CF_DOMAIN}}"
+    CF_ACME: "{{CF_ACME}}"
+    CF_API_EMAIL: "{{CF_API_EMAIL}}"
+    CF_API_KEY: "{{CF_API_KEY}}"
+    CF_DYNAMIC: "{{CF_DYNAMIC}}"
+    CF_ZONE_ID: "{{CF_ZONE_ID}}"
+    CF_API_KEY_SCOPED: "{{CF_API_KEY_SCOPED}}"
+    TRAEFIK_HOST: "{{TRAEFIK_HOST}}"
+    APM_SERVER: "{{APM_SERVER}}"
+    APM_SERVICE: "{{APM_SERVICE}}"
+    WEBSERVER_HOST: "{{WEBSERVER_HOST}}"
+    GRAFANA_HOST: "{{GRAFANA_HOST}}"
+    GRAFANA_EXTERNAL: "{{GRAFANA_EXTERNAL}}"
+    htaccess_user: "{{htaccess_user}}"
+    htaccess_password: "{{htaccess_password}}"

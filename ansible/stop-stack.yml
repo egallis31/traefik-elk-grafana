@@ -1,0 +1,4 @@
+- hosts: es-traefik
+  become: true
+  roles: 
+    - stop_es_stack

@@ -1,0 +1,9 @@
+---
+- name: Stop es-traefik Stack
+  docker_compose:
+    project_src: "{{DEST_DIR}}/es-traefik"
+    state: absent
+  register: output
+
+- debug:
+    var: output

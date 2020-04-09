@@ -1,0 +1,78 @@
+################################################################
+# API and dashboard configuration
+################################################################
+defaultEntryPoints = ["https"] 
+InsecureSkipVerify = true
+logLevel = "ERROR"
+
+[entryPoints]
+   [entryPoints.http]
+   address = ":80"
+   compress = true
+   [entryPoints.http.redirect]
+     entryPoint = "https"
+   [entryPoints.https]
+   address = ":443"
+   compress = true
+     [entryPoints.https.tls]
+
+[api]
+  debug = true
+  [api.statistics]
+  recentErrors = 20
+
+[rest]
+
+[traefikLog]
+filePath = "/var/log/traefik/traefik.log"
+format = "common"
+
+[accessLog]
+format = "common" 
+
+[ping]
+  entryPoint = "traefik"
+
+[metrics]
+
+  [metrics.prometheus]
+
+    # Name of the related entry point
+    #
+    # Optional
+    # Default: "traefik"
+    #
+    entryPoint = "traefik"
+
+    # Buckets for latency metrics
+    #
+    # Optional
+    # Default: [0.1, 0.3, 1.2, 5]
+    #
+    buckets = [0.1,0.3,1.2,5.0]
+
+  
+################################################################
+# Docker configuration backend
+################################################################
+# Enable Docker Provider. - DOES NOT WORK WITH PHOTON OS
+[docker]
+
+# Docker server endpoint. Can be a tcp or a unix socket endpoint.
+#
+# Required
+#
+endpoint = "unix:///var/run/docker.sock"
+
+# Default base domain used for the frontend rules.
+# Can be overridden by setting the "traefik.domain" label on a container.
+#
+# Optional
+#
+# domain = "docker.local"
+# Enable watch docker changes.
+#
+# Optional
+#
+#watch = true
+

@@ -1,0 +1,251 @@
+version: '2.2'
+services:
+  elastic:
+    image: elasticsearch:${ES_VERSION}
+    container_name: ${ES_NODE}
+    environment:
+      - node.name=${ES_NODE}
+      - cluster.name=${ES_CLUSTER}
+      - network.host=0.0.0.0
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    labels:
+      - traefik.port=9200
+      - traefik.frontend.rule=Host:${ELASTICSEARCH_HOST}.${CF_DOMAIN}
+      - traefik.frontend.passHostHeader=true
+      - traefik.frontend.entryPoints=https
+      - traefik.enable=${ELASTICSEARCH_EXTERNAL}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks: 
+      - es-traefik
+  kibana:
+    image: kibana:${ES_VERSION}
+    container_name: kibana
+    depends_on:
+      elastic:
+        condition: service_healthy
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_NAME=${KIBANA_HOST}.${CF_DOMAIN}
+      - ELASTICSEARCH_HOSTS=http://${ES_NODE}:9200
+      - XPACK_MONITORING_ENABLED=true
+      - LOGGING_QUIET=true
+    labels: 
+      - traefik.port=5601
+      - traefik.frontend.rule=Host:kibana-test.${CF_DOMAIN}
+      - traefik.frontend.passHostHeader=true
+      - traefik.frontend.entryPoints=https
+      - traefik.frontend.auth.basic.usersFile=/mnt/.htpasswd
+    healthcheck:
+      test: curl http://localhost:5601 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 60s
+      timeout: 10s
+      retries: 5 
+    networks: 
+      - es-traefik
+    volumes: 
+      - ./htaccess:/mnt
+  kibana-init:
+    build: 
+      context: ./src/kibana-init
+    image: kibana-init:${ES_VERSION}
+    container_name: kibana-init
+    depends_on: 
+      kibana:
+        condition: service_healthy
+    environment: 
+      - KIBANA_DARK_MODE=${KIBANA_DARK_MODE}
+    networks: 
+      - es-traefik
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:${ES_VERSION}
+    container_name: filebeat
+    user: root
+    depends_on: 
+      kibana:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOST=${ES_NODE}
+      - STRICT_PERMS=false
+    volumes:
+      - ./src/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - filebeat-data:/usr/share/filebeat/data:rw
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: 
+      - es-traefik
+    command: "filebeat --strict.perms=false"
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:${ES_VERSION}
+    container_name: metricbeat
+    user: root
+    depends_on: 
+      kibana:
+        condition: service_healthy
+    environment: 
+      - ELASTICSEARCH_HOST=${ES_NODE}
+      - STRICT_PERMS=false
+    volumes: 
+      - ./src/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+    networks: 
+      - es-traefik
+    command: "metricbeat --strict.perms=false"
+  apm-server:
+    container_name: apm-server
+    image: docker.elastic.co/apm/apm-server:7.6.1
+    depends_on: 
+      kibana:
+        condition: service_healthy
+    environment: 
+      - ES_NODE=${ES_NODE}
+      - STRICT_PERMS=false
+    labels: 
+      - traefik.port=8200
+      - traefik.frontend.rule=Host:${APM_HOST}.${CF_DOMAIN}
+      - traefik.frontend.passHostHeader=true
+      - traefik.frontend.entryPoints=https
+      - traefik.enable=${APM_EXTERNAL}
+    volumes: 
+      - ./src/apm-server/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
+    networks: 
+      - es-traefik
+    command: "apm-server --strict.perms=false"
+  traefik:
+    container_name: traefik
+    build:
+      context: ./src/traefik
+    environment:
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_API_KEY=${CF_API_KEY}
+      - docker.domain=${CF_DOMAIN}
+    command:
+      - "--acme=${CF_ACME}"
+      - "--acme.entrypoint=https"
+      - "--acme.onHostRule=true"
+      - "--acme.storage=/var/log/traefik/acme.json"
+      - "--acme.dnsChallenge.provider=cloudflare"
+      - "--acme.dnsChallenge.delayBeforeCheck=0"
+      - "--acme.domains=${CF_DOMAIN}"
+      - "--acme.email=${CF_API_EMAIL}"
+    labels:
+      - traefik.port=8080
+      - traefik.frontend.rule=Host:${TRAEFIK_HOST}.${CF_DOMAIN}
+      - traefik.frontend.passHostHeader=true
+      - traefik.frontend.entryPoints=https
+      - traefik.frontend.auth.basic.usersFile=/mnt/.htpasswd
+      - co.elastic.metrics/module=traefik
+      - co.elastic.metrics/metricsets=health
+      - co.elastic.metrics/hosts=traefik:8080
+      - co.elastic.metrics/period=10s
+      - co.elastic.logs/module=traefik
+      - co.elastic.logs/fileset.stdout=access
+      - co.elastic.logs/fileset.stderr=error
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./htaccess:/mnt
+    networks: 
+      - es-traefik
+  webserver:
+    container_name: webserver
+    build: 
+      context: ./src/webserver
+    image: webserver
+    depends_on: 
+      - apm-server
+    environment: 
+      - ES_CLUSTER=${ES_CLUSTER}
+      - APM_SERVER=${APM_SERVER}
+      - APM_SERVICE=${APM_SERVICE}
+    labels: 
+      - traefik.port=80
+      - traefik.frontend.rule=Host:${WEBSERVER_HOST}.${CF_DOMAIN}
+      - traefik.frontend.passHostHeader=true
+      - traefik.frontend.entryPoints=https
+    networks: 
+      - es-traefik
+  cf_dynamic_ip:
+    container_name: cf_dynamic_ip
+    image: oznu/cloudflare-ddns
+    environment: 
+      - API_KEY=${CF_API_KEY_SCOPED}
+      - ZONE=${CF_DOMAIN}
+      - SUBDOMAIN=${CF_DYNAMIC}
+      - PROXIED=true
+    networks: 
+      - es-traefik
+  cf_init:
+    container_name: cf_init
+    depends_on: 
+      - cf_dynamic_ip
+    image: cf_init
+    build: 
+      context: ./src/cloudflare-init
+    environment: 
+      - CF_ACME=${CF_ACME}
+      - CF_DOMAIN=${CF_DOMAIN}
+      - CF_DYNAMIC=${CF_DYNAMIC}
+      - CF_ZONE_ID=${CF_ZONE_ID}
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_API_KEY=${CF_API_KEY}
+      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
+      - ELASTICSEARCH_EXTERNAL=${ELASTICSEARCH_EXTERNAL}
+      - KIBANA_HOST=${KIBANA_HOST}
+      - WEBSERVER_HOST=${WEBSERVER_HOST}
+      - TRAEFIK_HOST=${TRAEFIK_HOST}
+      - APM_HOST=${APM_HOST}
+      - APM_EXTERNAL=${APM_EXTERNAL}
+      - GRAFANA_HOST=${GRAFANA_HOST}
+      - GRAFANA_EXTERNAL=${GRAFANA_EXTERNAL}
+    networks: 
+      - es-traefik
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    depends_on: 
+      elastic:
+        condition: service_healthy
+    environment: 
+      - GF_SECURITY_ADMIN_USER=${htaccess_user}
+      - GF_SECURITY_ADMIN_PASSWORD=${htaccess_password}
+      - GF_SERVER_DOMAIN=${GRAFANA_HOST}.${CF_DOMAIN}
+      - GF_SERVER_HTTP_ADDR=0.0.0.0
+      - GF_SERVER_PROTOCOL=http
+      - GF_SERVER_HTTP_PORT=3000
+      - GF_INSTALL_PLUGINS=grafana-worldmap-panel,ryantxu-ajax-panel,grafana-piechart-panel
+      - ES_NODE=${ES_NODE}
+    labels: 
+      - traefik.port=3000
+      - traefik.frontend.rule=Host:${GRAFANA_HOST}.${CF_DOMAIN}
+      - traefik.frontend.passHostHeader=true
+      - traefik.frontend.entryPoints=https
+      - traefik.enable=${GRAFANA_EXTERNAL}
+    volumes: 
+      - ./src/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./src/grafana/provisioning/:/etc/grafana/provisioning
+    networks: 
+      - es-traefik
+
+networks: 
+  es-traefik:
+
+volumes:
+  elastic-data:
+  filebeat-data:
