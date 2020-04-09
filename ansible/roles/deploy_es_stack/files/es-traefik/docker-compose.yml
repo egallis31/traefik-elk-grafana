@@ -240,6 +240,7 @@ services:
     volumes: 
       - ./src/grafana/dashboards:/var/lib/grafana/dashboards
       - ./src/grafana/provisioning/:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
     networks: 
       - es-traefik
 
@@ -249,3 +250,4 @@ networks:
 volumes:
   elastic-data:
   filebeat-data:
+  grafana-data:
