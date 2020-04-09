@@ -43,7 +43,7 @@
 
 * If planning to collect data from other local hosts, include port 9200 in the compose file.
 * If planning to have externally accessible, please follow Elastic's guide to enable Security
-* Note: Not meant for full production as only a standalone node
+
 
 ## Kibana
 
