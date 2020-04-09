@@ -1,5 +1,7 @@
 # Traefik + Docker Monitoring Stack
 
+Web Application Monitoring Stack Deployment with Automated Cloudlfare Setup
+
 * Comprised of ELK stack that auto discovers new docker containers
 * Filebeat will read all stdout from containers
 * Metricbeat will gather metrics from containers and host
