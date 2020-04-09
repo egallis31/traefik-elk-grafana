@@ -58,4 +58,4 @@
 * This stack works with Cloudflare TLS settings for Full (strict)
 * Requests are all sent over TLS 1.3
 * All DNS records point to Cloudflare, meaning origin IP is not exposed
-* Check `README.md` for all Cloudflare API values needed
+* Check `elastic/README.md` for all Cloudflare API values needed
