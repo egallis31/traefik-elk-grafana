@@ -1,4 +1,4 @@
-# Cloud Based Host/Application Monitoring Stack 
+# Cloud Based Host/Application Monitoring Stack
 
 * Comprised of ELK stack that auto discovers new docker containers
 * Filebeat will read all stdout from containers
@@ -44,7 +44,6 @@
 * If planning to collect data from other local hosts, include port 9200 in the compose file.
 * If planning to have externally accessible, please follow Elastic's guide to enable Security
 
-
 ## Kibana
 
 * Access and search dashboards for `Traefik`
@@ -54,6 +53,11 @@
 
 * Easily customizable dashboard system that support numerous datasources
 * Handles alerting and allows for more customizable dashboards
+
+## Traefik
+
+* frontends are currently protected with basic-auth
+* TODO: implementing `authelia/authelia` with local users/LDAP (few weeks after sem.)
 
 ## Sample Webserver
 
