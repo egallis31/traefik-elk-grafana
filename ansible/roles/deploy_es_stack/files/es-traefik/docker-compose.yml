@@ -107,7 +107,7 @@ services:
     command: "metricbeat --strict.perms=false"
   apm-server:
     container_name: apm-server
-    image: docker.elastic.co/apm/apm-server:7.6.1
+    image: docker.elastic.co/apm/apm-server:${ES_VERSION}
     depends_on: 
       kibana:
         condition: service_healthy

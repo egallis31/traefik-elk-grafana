@@ -4,7 +4,7 @@
 # Elasticsearch
 export ES_NODE="elastic"
 export ES_CLUSTER="es-traefik"
-export ES_VERSION="7.6.1"
+export ES_VERSION="7.7.0"
 export KIBANA_DARK_MODE="true"
 
 # frontend urls ex: traefik.CF_DOMAIN
